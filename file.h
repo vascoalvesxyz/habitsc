@@ -1,4 +1,6 @@
 #include <time.h>
+#include <stdio.h>
+
 /* helper */
 time_t get_now_date();
 time_t make_date(time_t time);
@@ -10,6 +12,7 @@ void reset();
 /* work by reading the file directly, no linked lists */
 void print_habitn_from_file(char* path, char* name, int n); // ✅✅ works
 void print_habitsn_from_playlist_file(char* path, char* playlist, int n); // ✅✅ works
-void add_to_playlist(char* home, char* name, char* playlist); // ✅ appends to playlist file
-void remove_from_playlist(char* path, char* name, char* playlist); // removes from playlist
-void mark_in_file(char* path, char* name); // 
+void add_to_playlist(char* home, char* name, char* playlist); // ✅✅ appends to playlist file
+void remove_from_playlist(char* path, char* name, char* playlist); // ✅✅ works
+void mark_in_file(char* path, char* name); // ✅✅ works
+int search_file(FILE* f, char* name );

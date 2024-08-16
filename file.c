@@ -32,9 +32,26 @@ time_t get_now_date() {
     return make_date(time(NULL));
 }
 
+int search_file(FILE* f, char* name ) {
+    if (f == NULL) return 0; /* can't search an empty file */
+    char *dup = alloc_real_path(name,"\n");
+    char buf[BUF_SIZE];
+    int res = 0;
+    while (NULL != fgets(buf, BUF_SIZE, f)) {
+        if (strcmp(buf, dup) == 0) {
+            res = 1;
+            break;
+        }
+    }
+    free(dup);
+    return res;
+}
+
+
 /* most important and basic function */
 void print_habitn_from_file(char* path, char* name, int n) {
-    if (n>50000) n = 50000;
+    if (n > 50000) n = 50000;
+
     FILE * fread;
     char* habitpath = alloc_real_path(path, name);
     fread = fopen(habitpath, "r");
@@ -118,60 +135,39 @@ void print_habitsn_from_playlist_file(char* path, char* playlist, int n) {
 
 /* adds to playlist file */
 void add_to_playlist(char* home, char* name, char* playlist) {
-    if (strlen(name) > 30)
-    {
-        printf("Names can't be longer than 30 characters!\n");
+    if (strlen(name) > 10) {
+        printf("Names can't be longer than 10 characters!\n");
         return;
     }
     char* playlist_path = alloc_real_path(home, playlist);
     FILE* fadd = fopen(playlist_path, "a");
     fprintf(fadd, "%s\n", name); 
-    if (fadd) fclose(fadd);
+    fclose(fadd);
     free(playlist_path);
 }
 
 void remove_from_playlist(char* path, char* name, char* playlist) {
-
     char* rpath = alloc_real_path(path, playlist);
-    char *habit_file_path = alloc_real_path(path, name);
-
-    FILE* fplaylist = fopen(rpath, "r+");
-    FILE* fhabit = fopen(habit_file_path, "r");
-
-    if (fhabit == NULL) {
-        printf("Habit does not exist!\n");
-        if (fplaylist) fclose(fplaylist); /* close it if also opened */
+    FILE* fplaylist = fopen(rpath, "r");
+    printf("Removing %s from %s\n", name, rpath);
+    if (fplaylist == NULL) {
+        printf("Playlist does not exist!");
     }
-    else { 
-        if (fplaylist == NULL) {
-            printf("Playlist does not exist!");
+    else {
+        char *tempfilename = "___temporary file___";
+        FILE* temp = fopen(tempfilename, "w");
+        strcat(name, "\n"); /* must add newline to compare */
+        char *buffer = calloc(31, sizeof(char));
+        while (NULL != fgets(buffer, 30, fplaylist)) { /* find line to skip */
+            if (strcmp(name, buffer)) fputs(buffer, temp);
         }
-        else {
-            char input;
-            printf("\tAre you sure you want to delete this habit forever? (y/N)\n\t(you could archive instead) ");
-            scanf("%c", &input);
-            if (input == 'y' ) {
-                char *tempfilename = "___temporary file___";
-                FILE* temp = fopen(tempfilename, "w");
-                strcat(name, "\n"); /* must add newline to compare */
-                char *buffer = calloc(31, sizeof(char));
-                while (NULL != fgets(buffer, 30, fplaylist)) { /* find line to skip */
-                    if (strcmp(name, buffer)) fputs(buffer, temp);
-                }
-                fclose(temp);
-                free(buffer);
+        fclose(temp);
+        free(buffer);
 
-                remove(rpath);
-                rename(tempfilename, rpath);
-                if (strcmp("all.playlist", playlist) == 0) remove(habit_file_path);
-            }
-            fclose(fplaylist);
-            fclose(fhabit); 
-        }
-    } 
-
-    free(rpath);
-    free(habit_file_path);
+        remove(rpath);
+        rename(tempfilename, rpath);
+    }
+    fclose(fplaylist);
 }
 
 void mark_in_file(char* path, char* name) {
@@ -205,4 +201,3 @@ void mark_in_file(char* path, char* name) {
     }
     free(realpath);
 }
-
