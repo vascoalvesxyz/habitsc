@@ -11,43 +11,41 @@ make
 
 ## Example Use:
 
-Shows last _n_ days for all habits. Defaults to 7. 
-```
-habitsc [n]
-```
+#### Shows last _n_ days for all habits. Defaults to 7. 
+`habitsc [n]`
 
-Show last 365 days for all habits. 
+#### Show last 365 days for all habits. 
 ```
 habitsc 365 | less
 ```
 
-Adds/deletes habit _name_.
+#### Adds/deletes habit _name_.
 ```
 habitsc [add|del] [name]
 ```
 
-Marks today as done in _name_.
+#### Marks today as done in _name_.
 ```
 habitsc mark [name]
 ```
 
-Show the last _n_ days of habit _name_. Defaults to 7.
+#### Show the last _n_ days of habit _name_. Defaults to 7.
 ```
 habitsc status [name] [n]
 ```
 
-#### Playlist Commands 
-Create playlist _name_.
+### Playlist Commands 
+#### Create playlist _name_.
 ```
 habitsc playlist -c [playlist]
 ```
 
-Shows habits in _name_ playlist for last _n_ days.
+#### Shows habits in _name_ playlist for last _n_ days.
 ```
 habitsc playlist -s [playlist] [n]
 ```
 
-Add/delete habit _name_ in _playlist_ for last _n_ days.
+#### Add/delete habit _name_ in _playlist_ for last _n_ days.
 ```
 habitsc playlist -[a|d] [playlist] [name]
 ```
