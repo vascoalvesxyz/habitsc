@@ -14,11 +14,7 @@ make
 ### Configuration
 
 config.h has some options you can change if you need to.
-```c
-#define ASCII_MODE          0   /* In case your terminal doesn't support fancy characters*/
-#define MAX_DAYS_PER_LINE   30  /* Days before it prints a newline*/
-#define SEPERATE_HABITS     0   /* Draw lines between habits */
-```
+
 You need to run make again to apply the changes (duh).
 
 

@@ -70,13 +70,21 @@ void draw_tbar(unsigned int n, char* name) {
         TOP_RIGHT_CORNER = "|";
         HBAR_THICK = "-";
     }
-    if (n > MAX_DAYS_PER_LINE) n = MAX_DAYS_PER_LINE;
+    int nx = n;
+    if (n > MAX_DAYS_PER_LINE) nx = MAX_DAYS_PER_LINE;
     printf("%s", TOP_LEFT_CORNER);
     for (register unsigned int i = 0; i < NAME_PADDING+1; i++) printf("%s", HBAR_THICK);
     printf("%s", TOP_MID_ELBOW);
-    for (register unsigned int i = 0; i < (2*n)+1; i++) printf("%s", HBAR_THICK);
+    for (register unsigned int i = 0; i < (2*nx)+1; i++) printf("%s", HBAR_THICK);
     printf("%s\n", TOP_RIGHT_CORNER);
-    printf("%s%*s %s %*d days %s\n", VBAR_THICK, NAME_PADDING, name, VBAR_THIN, (2*n)-4-2, n, VBAR_THICK);
+    if (n>nx) {
+        int rows = (n-(n%nx))/nx;
+        char buf[10];
+        sprintf(buf, "%d", rows);
+        int back = strlen(buf);
+        printf("%s%*s %s %*d*%d days %s\n", VBAR_THICK, NAME_PADDING, name, VBAR_THIN, (2*nx)-8-(back), rows, nx, VBAR_THICK);
+    }
+    else printf("%s%*s %s %*d days %s\n", VBAR_THICK, NAME_PADDING, name, VBAR_THIN, (2*nx)-4-2, n, VBAR_THICK);
 }
 
 void draw_bbar(unsigned int n) {
