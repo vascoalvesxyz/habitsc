@@ -62,7 +62,7 @@ void print_habitn_from_file(char* path, char* name, int n) {
         time_t right;
         time_t left = get_now_date()+(24*60*60);
 
-        printf("%10s | ", name);
+        printf("|%10s | ", name);
         char buffer[31]; 
         while (NULL != fgets(buffer, BUF_SIZE, fread)) {
             right = strtoul(buffer, NULL, 10); 
@@ -75,7 +75,7 @@ void print_habitn_from_file(char* path, char* name, int n) {
                     printf("o ");
                     reset();
                     c++;
-                    if (c%30 == 0 ) printf("\n\t   | ");
+                    if (c%30 == 0 && c!=n) printf("|\n|\t    | ");
                 }
                 if (c >= n) break;
             }
@@ -84,7 +84,7 @@ void print_habitn_from_file(char* path, char* name, int n) {
             printf("x ");
             c++;
             reset();
-            if (c%30 == 0 ) printf("\n\t   | ");
+            if (c%30 == 0 && c!=n ) printf("|\n|\t    | ");
             if (c >= n) break;
 
             left = right;
@@ -97,11 +97,19 @@ void print_habitn_from_file(char* path, char* name, int n) {
                 printf("o ");
                 reset();
                 c++;
-                if (c%30 == 0 ) printf("\n\t   | ");
+                if (c%30 == 0 && c!=n ) printf("|\n|\t    | ");
             }
         }
-        printf("\n");
+        int nx = n;
+        if (n > 30) nx = 30;
+        if (c%30) printf("%*s", 2*(nx - c%30 + 1), "|\n");
+        else printf("|\n");
         fclose(fread);
+        putc('|', stdout);
+        for (int i = 0; i < 11; i++) putc('-', stdout);
+        putc('|', stdout);
+        for (int i = 0; i < (2*nx)+1; i++) putc('-', stdout);
+        puts("|");
     }
     free(habitpath);
     if (n>50000)
@@ -116,6 +124,7 @@ void print_habitn_from_file(char* path, char* name, int n) {
 
 /* prints habits from a dot playlist file */
 void print_habitsn_from_playlist_file(char* path, char* playlist, int n) {
+
     char* pl_path = alloc_real_path(path, playlist);
     FILE* fptr = fopen(pl_path, "r");
 
@@ -123,6 +132,13 @@ void print_habitsn_from_playlist_file(char* path, char* playlist, int n) {
         printf("Playlist not found!");
     }
     else {
+        int nx = n;
+        if (n > 30) nx = 30;
+        putc('|', stdout);
+        for (int i = 0; i < 11; i++) putc('-', stdout);
+        putc('|', stdout);
+        for (int i = 0; i < (2*nx)+1; i++) putc('-', stdout);
+        puts("|");
         char buffer[31]; /* names shouldn't be longer than 30 char */
         while (EOF != fscanf(fptr, "%[^\n]\n", buffer)) {
             print_habitn_from_file(path, buffer, n);
