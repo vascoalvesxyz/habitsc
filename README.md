@@ -9,6 +9,19 @@ cd habitsc
 make
 ```
 
+**The binary is copied to ./local/bin, if you don't have this folder added to $PATH copy habitsc to /usr/bin !!!**.
+
+### Configuration
+
+config.h has some options you can change if you need to.
+```c
+#define ASCII_MODE          0   /* In case your terminal doesn't support fancy characters*/
+#define MAX_DAYS_PER_LINE   30  /* Days before it prints a newline*/
+#define SEPERATE_HABITS     0   /* Draw lines between habits */
+```
+You need to run make again to apply the changes (duh).
+
+
 ## Example Use:
 
 #### Shows last _n_ days for all habits. Defaults to 7. 

@@ -6,14 +6,15 @@
 #include <unistd.h>
 
 #include "file.h"
-
-#define BUF_SIZE 31
+#include "config.h"
 
 void red() { printf("\033[1;31m"); }
 void blue() { printf("\033[0;34m"); }
 void reset() { printf("\033[0m"); }
 
-char* alloc_real_path(char* home, char* name) {
+static const unsigned int NAME_PADDING = 16;
+
+char* alloccat(char* home, char* name) {
     char* realname = (char*) malloc(sizeof(char)*(strlen(home)+strlen(name) + 1));
     strcpy(realname, home);
     strcat(realname, name);
@@ -34,7 +35,7 @@ time_t get_now_date() {
 
 int search_file(FILE* f, char* name ) {
     if (f == NULL) return 0; /* can't search an empty file */
-    char *dup = alloc_real_path(name,"\n");
+    char *dup = alloccat(name,"\n");
     char buf[BUF_SIZE];
     int res = 0;
     while (NULL != fgets(buf, BUF_SIZE, f)) {
@@ -47,49 +48,104 @@ int search_file(FILE* f, char* name ) {
     return res;
 }
 
+void draw_hseperators(unsigned int n) {
+    if (n > MAX_DAYS_PER_LINE) n = MAX_DAYS_PER_LINE;
+    if (ASCII_MODE >= 1) {
+        LEFT_ELBOW = "|";
+        MID_ELBOW = "|";
+        RIGHT_ELBOW = "|";
+        HBAR = "-";
+    }
+    printf("%s", LEFT_ELBOW);
+    for (register unsigned int i = 0; i < NAME_PADDING+1; i++) printf("%s", HBAR);
+    printf("%s", MID_ELBOW);
+    for (register unsigned int i = 0; i < (2*n)+1; i++) printf("%s", HBAR);
+    printf("%s\n", RIGHT_ELBOW);
+}
+
+void draw_tbar(unsigned int n, char* name) {
+    if (ASCII_MODE >= 1) {
+        TOP_LEFT_CORNER = "|";
+        TOP_MID_ELBOW = "|";
+        TOP_RIGHT_CORNER = "|";
+        HBAR_THICK = "-";
+    }
+    if (n > MAX_DAYS_PER_LINE) n = MAX_DAYS_PER_LINE;
+    printf("%s", TOP_LEFT_CORNER);
+    for (register unsigned int i = 0; i < NAME_PADDING+1; i++) printf("%s", HBAR_THICK);
+    printf("%s", TOP_MID_ELBOW);
+    for (register unsigned int i = 0; i < (2*n)+1; i++) printf("%s", HBAR_THICK);
+    printf("%s\n", TOP_RIGHT_CORNER);
+    printf("%s%*s %s %*d days %s\n", VBAR_THICK, NAME_PADDING, name, VBAR_THIN, (2*n)-4-2, n, VBAR_THICK);
+}
+
+void draw_bbar(unsigned int n) {
+    if (ASCII_MODE >= 1) {
+        BOTTOM_LEFT_CORNER = "|";
+        BOTTOM_MID_ELBOW = "|";
+        BOTTOM_RIGHT_CORNER = "|";
+        HBAR_THICK = "-";
+    }
+    if (n > MAX_DAYS_PER_LINE) n = MAX_DAYS_PER_LINE;
+    printf("%s", BOTTOM_LEFT_CORNER);
+    for (register unsigned int i = 0; i < NAME_PADDING+1; i++) printf("%s", HBAR_THICK);
+    printf("%s", BOTTOM_MID_ELBOW);
+    for (register unsigned int i = 0; i < (2*n)+1; i++) printf("%s", HBAR_THICK);
+    printf("%s\n", BOTTOM_RIGHT_CORNER);
+}
 
 /* most important and basic function */
-void print_habitn_from_file(char* path, char* name, int n) {
+void print_habitn_from_file(char* path, char* name, unsigned int n) {
     if (n > 50000) n = 50000;
+    if (ASCII_MODE >= 1) {
+        LEFT_ELBOW = "|";
+        MID_ELBOW = "|";
+        RIGHT_ELBOW = "|";
+        HBAR = "-";
+        VBAR_THIN = "|";
+        VBAR_THICK = "|";
+    }
 
     FILE * fread;
-    char* habitpath = alloc_real_path(path, name);
+    char* habitpath = alloccat(path, name);
     fread = fopen(habitpath, "r");
     if (fread == NULL){
         printf("Habit %s does not exist! (%s)\n", name, habitpath);
     } else {
-        int c = 0;
+        unsigned int c = 0;
         time_t right;
         time_t left = get_now_date()+(24*60*60);
 
-        printf("|%10s | ", name);
+        /* print habit separator */
+        if (SEPERATE_HABITS) draw_hseperators(n);
+        printf("%s%*s %s ", VBAR_THICK, 16, name, VBAR_THIN);
         char buffer[31]; 
+
+        /* Print marked dates using left and right pointers */
         while (NULL != fgets(buffer, BUF_SIZE, fread)) {
             right = strtoul(buffer, NULL, 10); 
             int in_between = (difftime(left, right) / (24*60*60))-1;
-            //printf("%d", in_between);
             if (in_between >  0) {
-                for (int i = 0; i < in_between; i++) {
+                for (register int i = 0; i < in_between; i++) {
                     if (c >= n) break;
                     blue();
                     printf("o ");
                     reset();
                     c++;
-                    if (c%30 == 0 && c!=n) printf("|\n|\t    | ");
+                    if (c%MAX_DAYS_PER_LINE == 0 && c!=n)
+                        printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
                 }
                 if (c >= n) break;
             }
-            /* print marked date */
             red();
             printf("x ");
             c++;
             reset();
-            if (c%30 == 0 && c!=n ) printf("|\n|\t    | ");
+            if (c%MAX_DAYS_PER_LINE == 0 && c!=n )
+                printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
             if (c >= n) break;
-
             left = right;
         }
-
         /* if there are still characters to fill */
         if (c < n) {
             while (c < n) {
@@ -97,48 +153,33 @@ void print_habitn_from_file(char* path, char* name, int n) {
                 printf("o ");
                 reset();
                 c++;
-                if (c%30 == 0 && c!=n ) printf("|\n|\t    | ");
+                if (c%MAX_DAYS_PER_LINE == 0 && c!=n )
+                        printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
             }
         }
+        /* fill in the space in the remaining row */
         int nx = n;
-        if (n > 30) nx = 30;
-        if (c%30) printf("%*s", 2*(nx - c%30 + 1), "|\n");
-        else printf("|\n");
+        if (n > MAX_DAYS_PER_LINE) nx = MAX_DAYS_PER_LINE;
+        if (c%MAX_DAYS_PER_LINE) printf("%*s", 2*(nx - c%MAX_DAYS_PER_LINE), "");
+        puts(VBAR_THICK);
         fclose(fread);
-        putc('|', stdout);
-        for (int i = 0; i < 11; i++) putc('-', stdout);
-        putc('|', stdout);
-        for (int i = 0; i < (2*nx)+1; i++) putc('-', stdout);
-        puts("|");
     }
     free(habitpath);
-    if (n>50000)
-    {
-        printf("The max number of days ago");
-        red();
-        printf(" shown ");
-        reset();
-        printf("is 50000 days (aprox. 136 years)\n Excuse me if you are a time traveler.\n");
+    if (n>50000) {
+        printf("The max number of days ago"); red(); printf(" shown "); reset(); puts("is 50000 days (aprox. 136 years)\n Excuse me immortal vampires and time travelers.");
     }
 }
 
 /* prints habits from a dot playlist file */
-void print_habitsn_from_playlist_file(char* path, char* playlist, int n) {
+void print_habitsn_from_playlist_file(char* path, char* playlist, unsigned int n) {
 
-    char* pl_path = alloc_real_path(path, playlist);
+    char* pl_path = alloccat(path, playlist);
     FILE* fptr = fopen(pl_path, "r");
 
     if(fptr==NULL) {
         printf("Playlist not found!");
     }
     else {
-        int nx = n;
-        if (n > 30) nx = 30;
-        putc('|', stdout);
-        for (int i = 0; i < 11; i++) putc('-', stdout);
-        putc('|', stdout);
-        for (int i = 0; i < (2*nx)+1; i++) putc('-', stdout);
-        puts("|");
         char buffer[31]; /* names shouldn't be longer than 30 char */
         while (EOF != fscanf(fptr, "%[^\n]\n", buffer)) {
             print_habitn_from_file(path, buffer, n);
@@ -155,7 +196,7 @@ void add_to_playlist(char* home, char* name, char* playlist) {
         printf("Names can't be longer than 10 characters!\n");
         return;
     }
-    char* playlist_path = alloc_real_path(home, playlist);
+    char* playlist_path = alloccat(home, playlist);
     FILE* fadd = fopen(playlist_path, "a");
     fprintf(fadd, "%s\n", name); 
     fclose(fadd);
@@ -163,7 +204,7 @@ void add_to_playlist(char* home, char* name, char* playlist) {
 }
 
 void remove_from_playlist(char* path, char* name, char* playlist) {
-    char* rpath = alloc_real_path(path, playlist);
+    char* rpath = alloccat(path, playlist);
     FILE* fplaylist = fopen(rpath, "r");
     printf("Removing %s from %s\n", name, rpath);
     if (fplaylist == NULL) {
@@ -187,7 +228,7 @@ void remove_from_playlist(char* path, char* name, char* playlist) {
 }
 
 void mark_in_file(char* path, char* name) {
-    char* realpath = alloc_real_path(path, name);
+    char* realpath = alloccat(path, name);
     FILE* fread = (fopen(realpath, "r"));
     if( fread == NULL ) {
         puts("Habit doesn't exist!");

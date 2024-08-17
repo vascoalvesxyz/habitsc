@@ -4,38 +4,35 @@
 #include <time.h>
 
 #include "file.h"
+#include "config.h"
 
 #define ALL "all.playlist"
 
 #define TRUE 1
 #define FALSE 0
 
-
-int diffdate(time_t t1, time_t t2) {
-    time_t diff = difftime(t1, t2);
-    struct tm* l = localtime(&diff);
-    return abs(l->tm_yday + ((int) 365.25*(l->tm_year-70))) -1;    
-}
-
 int
 main(int argc, char *argv[]) {
-    char* path = alloc_real_path(getenv("HOME"),  "/.local/share/habits/");
+    char* path = alloccat(getenv("HOME"),  "/.local/share/habits/");
     if (argc <= 2) {
-        int days = 7;
+        int days = DEFAULT_DAYS;
         if (argv[1] != NULL) days = strtod(argv[1], NULL);
+        draw_tbar(days, ALL);
         print_habitsn_from_playlist_file(path, ALL, days);
+        draw_bbar(days);
     }
     /* status ✅✅ */
     else if (strcmp(argv[1], "status") == 0 && (argc == 4 || argc == 3)) {
-        int days = 7;
+        int days = DEFAULT_DAYS;
         if (argv[3] != NULL) days = strtod(argv[3], NULL);
-        printf("Displaying last %d days\n", days);
+        draw_tbar(days, "STATUS");
         print_habitn_from_file(path, argv[2], days);
+        draw_bbar(days);
     }
 
     /* add ✅✅ */
     else if (strcmp(argv[1], "add") == 0 && argc == 3) {
-        char *habit_file_path = alloc_real_path(path, argv[2]);
+        char *habit_file_path = alloccat(path, argv[2]);
         FILE* fread = fopen(habit_file_path, "r");
         if( fread != NULL ) {
             printf("Habit already exists!\n");
@@ -62,7 +59,7 @@ main(int argc, char *argv[]) {
 
     /* del ✅✅ */
     else if (strcmp(argv[1], "del") == 0 && argc == 3) {
-        char *habit_file_path = alloc_real_path(path, argv[2]);
+        char *habit_file_path = alloccat(path, argv[2]);
         FILE* fhabit = fopen(habit_file_path, "r");
         if (fhabit == NULL) {
             printf("Habit does not exist!\n");
@@ -80,15 +77,16 @@ main(int argc, char *argv[]) {
         print_habitsn_from_playlist_file(path, ALL, 7);
     }
 
+    /* Playlist stuff */
     else if (strcmp(argv[1], "playlist") == 0) {
         if (strlen(argv[2]) == 2 && argv[2][0] == '-' && (argc == 4 || argc == 5)) {
-            int days = 7;
+            int days = DEFAULT_DAYS;
             char *fp = NULL;
             FILE* fplaylist = NULL;
-            char* plpath = alloc_real_path(argv[3], ".playlist");
+            char* plpath = alloccat(argv[3], ".playlist");
             switch (argv[2][1]) {
                 case 'c':
-                    fp = alloc_real_path(path, plpath);
+                    fp = alloccat(path, plpath);
                     fplaylist = fopen(fp, "r");
                     if( fplaylist != NULL ) {
                         printf("Playlist already exists!\n");
@@ -107,7 +105,7 @@ main(int argc, char *argv[]) {
 
                 case 'a':
                     if (strcmp(plpath, "all.playlist")) {
-                        fp = alloc_real_path(path, argv[4]);
+                        fp = alloccat(path, argv[4]);
                         fplaylist = fopen(fp, "r");
                         if (fplaylist == NULL) {
                             printf("Habit %s doesn't exist!\n", argv[4]);
@@ -115,7 +113,7 @@ main(int argc, char *argv[]) {
                         else {
                             fclose(fplaylist); // close habit file before opening playlist
                             free(fp); // free memory of playlist path
-                            fp = alloc_real_path(path, plpath);
+                            fp = alloccat(path, plpath);
                             fplaylist = fopen(fp, "r");
 
                             if (fplaylist == NULL) {
@@ -135,7 +133,7 @@ main(int argc, char *argv[]) {
                     break;
 
                 case 'd':
-                    fp = alloc_real_path(path, plpath);
+                    fp = alloccat(path, plpath);
                     fplaylist = fopen(fp, "r");
                     if (fplaylist) {
                         if (search_file(fplaylist, argv[4]) == TRUE)
@@ -155,13 +153,10 @@ main(int argc, char *argv[]) {
         }
     }
 
-
     /* default */
     else {
         printf("Not a valid command!\n");
     }
-
     free(path);
-
     return 0;
 }
