@@ -59,15 +59,15 @@ void print_habitn_from_file(char* path, char* name, int n) {
         printf("Habit %s does not exist! (%s)\n", name, habitpath);
     } else {
         int c = 0;
-        time_t right = 0;
-        time_t left = get_now_date();
+        time_t right;
+        time_t left = get_now_date()+(24*60*60);
 
         printf("%10s | ", name);
-        char buffer[31]; /* names shouldn't be longer than 30 char */
-        while (EOF != fscanf(fread, "%[^\n]\n", buffer)) {
+        char buffer[31]; 
+        while (NULL != fgets(buffer, BUF_SIZE, fread)) {
             right = strtoul(buffer, NULL, 10); 
-            /* check how many days there are between left and right */
-            int in_between = (difftime(left, right) / (24*60*60)) - 1;
+            int in_between = (difftime(left, right) / (24*60*60))-1;
+            //printf("%d", in_between);
             if (in_between >  0) {
                 for (int i = 0; i < in_between; i++) {
                     if (c >= n) break;
@@ -171,33 +171,31 @@ void remove_from_playlist(char* path, char* name, char* playlist) {
 }
 
 void mark_in_file(char* path, char* name) {
-    char* realpath = (char*) malloc(sizeof(char)*(strlen(path)+strlen(name)+1));
-    strcpy(realpath, path);
-    strcat(realpath, name);
-
+    char* realpath = alloc_real_path(path, name);
     FILE* fread = (fopen(realpath, "r"));
-    if( fread != NULL ) 
-    {
+    if( fread == NULL ) {
+        puts("Habit doesn't exist!");
+    } else {
         char buf[BUF_SIZE];
         fgets(buf, BUF_SIZE, fread);
         time_t line1 =  strtoul(buf, NULL, 10);
 
-        if (get_now_date() > line1 ) {
+        if (get_now_date() <= line1 ) {
+            puts("Today already marked!");
+        }
+        else {
             char *tempfilename = "___temporary file___";
             FILE* fwrite = fopen(tempfilename, "w");
             fprintf(fwrite, "%ld\n", get_now_date());
             rewind(fread);
-            while (NULL != fgets(buf, BUF_SIZE, fread)) fputs(buf, fwrite); 
-            fclose(fread);
+            while (NULL != fgets(buf, BUF_SIZE, fread)) {
+                fputs(buf, fwrite); 
+            }
             fclose(fwrite);
             remove(realpath);
             rename(tempfilename, realpath);
-        } else {
-            printf("Today already marked!\n");
         }
-        if (fread) fclose(fread);
-    } else {
-        printf("Habit doesn't exist!\n");
+        fclose(fread);
     }
     free(realpath);
 }

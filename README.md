@@ -1,4 +1,6 @@
-# habitsc
+# HABITS CLI
+
+Finally, a habit tracker that isn't bloated and that can be printed at terminal startup! 
 
 ## Install
 ```bash
@@ -57,3 +59,5 @@ habitsc playlist -[a|d] [playlist] [name]
 
 ## Todo
 - List playlists.
+- Change habit order in playlist.
+- Mark/unmark date at earlier day.
