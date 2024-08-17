@@ -12,7 +12,9 @@ make
 ## Example Use:
 
 #### Shows last _n_ days for all habits. Defaults to 7. 
-`habitsc [n]`
+```
+habitsc [n]
+```
 
 #### Show last 365 days for all habits. 
 ```
