@@ -1,6 +1,6 @@
 # HABITS CLI
 
-![example img](https://imgur.com/ZlTxIpN)
+![example img](example.jpg)
 
 Finally, a habit tracker that isn't bloated and that can be printed at terminal startup! 
 
