@@ -22,45 +22,32 @@ You need to run make again to apply the changes (duh).
 
 ## Example Use:
 
-#### Shows last _n_ days for all habits. Defaults to 7. 
-```
-habitsc [n]
+```bash
+habitsc _n_            # Shows last _n_ days for all habits. Defaults to 30. 
+
+habitsc 365 | less      # Show last 365 days for all habits. 
+
+habitsc -ha code        # creates habit code
+
+habitsc -hm code        # marks/unmarks code as done for today
+
+habitsc -hs code _n_    # shows last _n_ days just for code
+
+habitsc -hd code        # deletes habid code
 ```
 
-#### Show last 365 days for all habits. 
-```
-habitsc 365 | less
-```
+### Playlist Commands
 
-#### Adds/deletes habit _name_.
-```
-habitsc [add|del] [name]
-```
+```bash
+habitsc -pc important       # creates playlist "important"
 
-#### Marks today as done in _name_.
-```
-habitsc mark [name]
-```
+habitsc -pa important code  # adds code to important
 
-#### Show the last _n_ days of habit _name_. Defaults to 7.
-```
-habitsc status [name] [n]
-```
+habitsc -pr important code  # removes code from important
 
-### Playlist Commands 
-#### Create playlist _name_.
-```
-habitsc playlist -c [playlist]
-```
+habitsc -ps important _n_   # shows last _n_ days just for code
 
-#### Shows habits in _name_ playlist for last _n_ days.
-```
-habitsc playlist -s [playlist] [n]
-```
-
-#### Add/delete habit _name_ in _playlist_ for last _n_ days.
-```
-habitsc playlist -[a|d] [playlist] [name]
+habitsc -pd important       # deletes playlist important 
 ```
 
 ## Todo
