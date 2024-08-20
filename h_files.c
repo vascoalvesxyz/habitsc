@@ -315,15 +315,16 @@ int file_append(char* path, char* what) {
 
 int file_touch(char* path) {
     int file_to_touch = open(path, O_RDONLY);
-    int status = 0;
+    int status = FALSE;
     if (file_to_touch != -1) {
-        status = 0;  
+        status = FALSE;  
         close(file_to_touch);
     } else {
         file_to_touch = open(path, O_WRONLY | O_CREAT | O_TRUNC, 0644);
         if (file_to_touch == -1) {
             status = -1;  
         } else {
+            status = TRUE;
             close(file_to_touch);
         }
     }

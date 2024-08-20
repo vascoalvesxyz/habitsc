@@ -23,27 +23,32 @@ main(int argc, char *argv[]) {
                 puts("That name is too long.");
                 break;
             }
+
             if (habit_create(habit_path) == TRUE) {
                 playlist_add(home_path, argv[2], ALL);
                 playlist_print(home_path, ALL, days);
             }
             break;
+
         case 'd':
             if (habit_delete(habit_path) == TRUE) {
                 playlist_remove(home_path, argv[2], ALL);
             }
             playlist_print(home_path, ALL, days);
             break;
+
         case 'm':
             habit_mark(habit_path);
             playlist_print(home_path, ALL, days);
             break;
+
         case 's':
             if (argv[3] != NULL) days = strtod(argv[3], NULL);
             draw_tbar(days, "STATUS");
             habit_print(home_path, argv[2], days);
             draw_bbar(days);
             break;
+
         default:
             if (argv[1] != NULL) days = strtod(argv[1], NULL);
             playlist_print(home_path, ALL, days);
@@ -60,6 +65,7 @@ main(int argc, char *argv[]) {
         char* plpath = alloccat(home_path, plname);
 
         switch (argv[1][2]) {
+
         case 'c':
             if (argv[2] == NULL) break;
             playlist_create(plpath);

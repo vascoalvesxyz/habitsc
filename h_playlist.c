@@ -30,16 +30,17 @@ void playlist_print(char* home, char* playlist_name, unsigned int n) {
 
         /* read line by line*/
         char *linebuffer = malloc(sizeof (*linebuffer) * MAX_HABIT_LEN);
-        char *ptr_line = &linebuffer[0];
-        char* ptr_file = &filebuffer[0];
+        char *ptr_line = linebuffer;
+        char* ptr_file = filebuffer;
 
         while (*ptr_file != '\0') {
             *ptr_line = *ptr_file;
             ptr_line++;
             ptr_file++;
+
             if (*(ptr_line - 1) == '\n') {
                 *(ptr_line - 1) = '\0';  
-                 habit_print(home, linebuffer, n); 
+                habit_print(home, linebuffer, n); 
                 ptr_line = linebuffer;  
             }
         }
@@ -77,6 +78,7 @@ void playlist_create(char* playlist_path) {
 
 /* adds to playlist file */
 void playlist_add(char* home_path, char* name, char* playlist) {
+
     if (strlen(name) < 1) return;
     char* playlist_path = alloccat(home_path, playlist);
     int res = file_append(playlist_path, name);
@@ -91,6 +93,7 @@ void playlist_add(char* home_path, char* name, char* playlist) {
         printf("%s successfully added to playlist %s.\n", name, playlist );
         break;
     }
+
     free(playlist_path);
 }
 

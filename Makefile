@@ -1,18 +1,14 @@
-# Usage:
-# make        # compile all binary
-# make clean  # remove ALL binaries and objects
+all: compile
 
-.PHONY = clean all
-SRCS := $(wildcard *.c)
+dir:
+	[[ -d "$$HOME/.local/bin" ]] || mkdir -p "$$HOME/.local/bin"
+	[[ -d "$$HOME/.share/habits" ]] || mkdir -p "$$HOME/.local/share/habits"
 
-all: install
-
-install: 
+compile:
 	gcc -o habitsc main.c h_draw.c h_files.c h_playlist.c h_habits.c
-	mkdir -p "$$HOME/.local/bin"
-	mkdir -p "$$HOME/.local/share/habits"
 	cp -v habitsc "$$HOME/.local/bin"
 
+install: dir compile
+
 clean:
-	@echo "Cleaning up..."
-	rm -rvf *.o
+	rm -rvf *.out

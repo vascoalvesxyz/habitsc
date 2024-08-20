@@ -32,18 +32,17 @@ time_t date_midnight(time_t time) {
 
 void habit_mark(char* habit_path) {
     FILE* file_to_read = fopen(habit_path, "r");
-    unsigned long line1 = 0; // Default to 0 if file can't be read or is empty
+    unsigned long line1 = FALSE;
 
     if (file_to_read != NULL) {
         char buf[32];
         if (fgets(buf, sizeof(buf), file_to_read) != NULL) {
-            // Convert the string to an unsigned long
+
             char* endptr;
             line1 = strtoul(buf, &endptr, 10);
 
-            // Only use the value if conversion was successful
             if (endptr == buf || (*endptr != '\n' && *endptr != '\0')) {
-                line1 = 0; // Reset to default if conversion fails
+                line1 = FALSE; 
             }
         }
         fclose(file_to_read);
@@ -55,9 +54,10 @@ void habit_mark(char* habit_path) {
         puts("Today already marked!");
     } else {
         char buf[32];
-        sprintf(buf, "%ld\n", (long)current_midnight);
+        sprintf(buf, "%ld", (long)current_midnight);
         file_prepend(habit_path, buf);
     }
+
 }
 
 
@@ -172,6 +172,7 @@ void habit_print(char* home, char* habit_name, unsigned int total_days) {
         puts(VBAR_THICK);
         fclose(file_to_Read);
     }
+
     free(habitpath);
     if (total_days > 50000) {
         printf("The number of days ago");

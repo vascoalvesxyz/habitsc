@@ -8,7 +8,7 @@ Finally, a habit tracker that isn't bloated and that can be printed at terminal 
 ```bash
 git clone https://github.com/vascoalvesxyz/habitsc.git 
 cd habitsc
-make
+make install
 ```
 
 **The binary is copied to ./local/bin, if you don't have this folder added to $PATH copy habitsc to /usr/bin !!!**.
