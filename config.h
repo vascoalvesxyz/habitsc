@@ -3,9 +3,8 @@
 
 static const unsigned int ASCII_MODE = 0;           /* Draw lines with ascii chars */
 static const unsigned int MAX_DAYS_PER_LINE = 30;   /* Days before it prints a newline*/
-static const unsigned int SEPERATE_HABITS = 1;      /* Draw lines between habits */
+static const unsigned int SEPERATE_HABITS = 0;      /* Draw lines between habits */
 static const unsigned int DEFAULT_DAYS = 30;      /* Default number of days when no argument provided*/
-
 static const unsigned int MAX_HABIT_LEN = 11;
 
 static const char* LEFT_ELBOW = "┠";

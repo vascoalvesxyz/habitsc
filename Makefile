@@ -1,14 +1,17 @@
-all: compile
+CFLAGS   = -std=c99 -pedantic -Wall -Wno-deprecated-declarations -Os
+CC = cc
 
-dir:
-	[[ -d "$$HOME/.local/bin" ]] || mkdir -p "$$HOME/.local/bin"
-	[[ -d "$$HOME/.share/habits" ]] || mkdir -p "$$HOME/.local/share/habits"
+SRC = habits.c h_files.c
 
-compile:
-	gcc -o habitsc main.c h_draw.c h_files.c h_playlist.c h_habits.c
+all: install clean
+
+install:
+	@[[ -d "$$HOME/.local/bin" ]] || mkdir -p "$$HOME/.local/bin"
+	@[[ -d "$$HOME/.share/habits" ]] || mkdir -p "$$HOME/.local/share/habits"
+	${CC} ${CFLAGS} -o habitsc ${SRC}
 	cp -v habitsc "$$HOME/.local/bin"
 
-install: dir compile
-
 clean:
-	rm -rvf *.out
+	rm -rf *.o
+
+.PHONY: all clean install 
