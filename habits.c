@@ -1,31 +1,31 @@
 #include "habits.h"
 #include "config.h"
+#include <stdio.h>
 
-static const unsigned int LINEBUFFER = 32;
+/*static const unsigned int LINEBUFFER = 32;*/
 static const unsigned int NAME_PADDING = 16;
 
 /* functions */
-time_t date_midnight(time_t time);
-
-void habit_mark(char *habit_path);
-int habit_create(char *habit_path);
-int habit_delete(char *habit_path);
-void habit_rename(char *path, char *old_name, char *new_name);
-void habit_print(char *home, char *habit_name, unsigned int total_days);
-
-void playlist_create(char *playlist_path);
-void playlist_delete(char *playlist_path);
-void playlist_add(char *home_path, char *name, char *playlist);
-void playlist_remove(char *home_path, char *name, char *playlist);
-void playlist_print(char *home, char *playlist_name, unsigned int n);
-
-void red();
 void blue();
+void red();
 void reset();
-void enable_ascci();
+time_t date_midnight(time_t time);
 void draw_tbar(unsigned int n, char *name);
 void draw_bbar(unsigned int n);
 void draw_hseperators(unsigned int n);
+void enable_ascci();
+int  habit_create(char *habit_path);
+int  habit_delete(char *habit_path);
+void habit_insert(char *habit_path, char* date, int is_date);
+void habit_mark(char *habit_path);
+void habit_print(char *home, char *habit_name, unsigned int total_days);
+void habit_print_dates(char *home, char *habit_name, unsigned int total_days);
+void habit_rename(char *path, char *old_name, char *new_name);
+void playlist_add(char *home_path, char *name, char *playlist);
+void playlist_create(char *playlist_path);
+void playlist_delete(char *playlist_path);
+void playlist_print(char *home, char *playlist_name, unsigned int n);
+void playlist_remove(char *home_path, char *name, char *playlist);
 
 /* implementations */
 void red() { printf("\033[1;31m"); }
@@ -48,83 +48,170 @@ void enable_ascci() {
     BOTTOM_RIGHT_CORNER = "+";
 }
 
-void habit_print(char *home, char *habit_name, unsigned int total_days) {
-    FILE *file_to_Read;
+void
+habit_print(char *home, char *habit_name, unsigned int total_days) 
+{
+    /* tldr: read file to buffer the size of a sector,
+     * iterate strings in array via pointers,
+     * habits are prepended by the way, shouldn't cause problems
+     * for strangely big files 
+     * after that is a simple loop where you calculate the difference between dates */
+
     char *habitpath = alloccat(home, habit_name);
-    file_to_Read = fopen(habitpath, "r");
-    if (file_to_Read == NULL) {
+    int file_to_read = open(habitpath, O_RDONLY);
+
+    if (file_to_read == ERR_NOFILE) {
         printf("Habit %s does not exist! (%s)\n", habit_name, habitpath);
-    } else {
-        unsigned int c = 0;
-        time_t right;
-        time_t left = date_midnight(time(NULL)) + (24 * 60 * 60);
+        free(habitpath);
+        return;
+    }
 
-        if (SEPERATE_HABITS == 1)
-            draw_hseperators(total_days);
+    char buffer[BUFSIZ+1];
 
-        printf("%s%*s %s ", VBAR_THICK, 16, habit_name, VBAR_THIN);
-        char buffer[LINEBUFFER];
+    int n_bytes = lseek(file_to_read, 0, SEEK_END);
+    lseek(file_to_read,  0, SEEK_SET);
+    read(file_to_read, buffer, n_bytes);
 
-        /* Print marked dates using left and right pointers */
-        while (NULL != fgets(buffer, LINEBUFFER, file_to_Read)) {
-            right = strtoul(buffer, NULL, 10);
+    if (n_bytes < BUFSIZ)  {
+        *(buffer+n_bytes-1) = '\n';
+        *(buffer+n_bytes) = '\0';
+    }
 
-            /* Print difference in between current marked date and next one*/
-            int in_between = (difftime(left, right) / (24 * 60 * 60)) - 1;
-            if (in_between > 0) {
-                for (register int i = 0; i < in_between; i++) {
-                    if (c >= total_days)
-                        break; /* break for loop */
-                    blue();
-                    printf("o ");
-                    reset();
-                    c++;
-                    if (c % MAX_DAYS_PER_LINE == 0 && c != total_days) {
-                        printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
-                    }
-                }
+    if (SEPERATE_HABITS == 1)
+        draw_hseperators(total_days);
+
+    printf("%s%*s %s ", VBAR_THICK, 16, habit_name, VBAR_THIN);
+
+    unsigned long left = date_midnight(time(NULL)) + 24*60*60;
+
+    char *bufptr = &buffer[0];
+    char *endptr = strchr(bufptr, '\n');
+    *(endptr) = '\0';
+
+    unsigned long right = strtoul(bufptr, NULL, 10);
+    uint i = 0, c = 0;
+    int in_between = 0; /* needs to be an int to avoid overflow */
+
+    while (*bufptr != '\0')
+    {
+        in_between = (difftime(left, right) / (24 * 60 * 60)) - 1;
+
+        if (in_between > 0) {
+
+            for (i = 0; i < in_between; i++)
+            {
                 if (c >= total_days)
-                    break; /* break while loop */
-            }
-
-            /* Print marked date */
-            red();
-            printf("x ");
-            c++;
-            reset();
-            if (c % MAX_DAYS_PER_LINE == 0 && c != total_days)
-                printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
-            if (c >= total_days)
-                break;
-            left = right;
-        }
-
-        /* if there are still characters to fill */
-        if (c < total_days) {
-            while (c < total_days) {
+                    break; 
                 blue();
                 printf("o ");
                 reset();
                 c++;
-                if (c % MAX_DAYS_PER_LINE == 0 && c != total_days)
+                if (c % MAX_DAYS_PER_LINE == 0 && c != total_days) {
                     printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
+                }
             }
+            if (c >= total_days)
+                break; 
         }
 
-        /* fill in the white space in the remaining row */
-        int nx = total_days;
-        if (total_days > MAX_DAYS_PER_LINE)
-            nx = MAX_DAYS_PER_LINE;
-        if (c % MAX_DAYS_PER_LINE)
-            printf("%*s", 2 * (nx - c % MAX_DAYS_PER_LINE), "");
-        printf("%s\n", VBAR_THICK);
-        fclose(file_to_Read);
+        red();
+        printf("x ");
+        c++;
+        reset();
+
+        if (c % MAX_DAYS_PER_LINE == 0 && c != total_days)
+            printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
+        if (c >= total_days)
+            break;
+
+        left = right;
+        bufptr = endptr + 1;
+        if ( NULL != (endptr = strchr(bufptr, '\n')) ) {
+                *(endptr) = '\0';
+        }
+        right = strtoul(bufptr, NULL, 10);
     }
+
+    if (c < total_days) {
+        while (c < total_days) {
+            blue();
+            printf("o ");
+            reset();
+            c++;
+            if (c % MAX_DAYS_PER_LINE == 0 && c != total_days)
+                printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
+        }
+    }
+
+    int nx = total_days;
+    if (total_days > MAX_DAYS_PER_LINE)
+        nx = MAX_DAYS_PER_LINE;
+    if (c % MAX_DAYS_PER_LINE)
+        printf("%*s", 2 * (nx - c % MAX_DAYS_PER_LINE), "");
+    printf("%s\n", VBAR_THICK);
+    close(file_to_read);
 
     free(habitpath);
 }
 
-/* prints habits from a dot playlist file */
+void
+habit_print_dates(char *home, char *habit_name, unsigned int total_days) 
+{
+    /* tldr: habit_print but prints dates in a column
+     * instead of x's and o's in rows
+     * mostly for debugging
+     * */
+
+    char habitpath[128];
+    strcpy(habitpath, home);
+    strcat(habitpath, habit_name);
+
+    int file_to_read = open(habitpath, O_RDONLY);
+    if (file_to_read == ERR_NOFILE) {
+        printf("Habit %s does not exist! (%s)\n", habit_name, habitpath);
+        return;
+    }
+
+    int n_bytes = lseek(file_to_read, 0, SEEK_END);
+    lseek(file_to_read,  0, SEEK_SET);
+
+    char buffer[n_bytes+1];
+    read(file_to_read, buffer, n_bytes);
+
+    *(buffer+n_bytes-1) = '\n';
+    *(buffer+n_bytes) = '\0';
+
+    unsigned long left = date_midnight(time(NULL));
+
+    char *bufptr = &buffer[0];
+    char *endptr = strchr(bufptr, '\n');
+    *(endptr) = '\0';
+
+    unsigned long right = strtoul(bufptr, NULL, 10);
+    int in_between;
+
+    struct tm *lt;
+    while (*bufptr != '\0')
+    {
+        in_between = (difftime(left, right) / (24 * 60 * 60)) - 1;
+        lt = localtime( (time_t*) &left ); 
+        printf("| %02d/%02d/%04d - %02d - ", lt->tm_mday, lt->tm_mon+1, lt->tm_year+1900, in_between);
+        lt = localtime( (time_t*) &right ); 
+        printf("%02d/%02d/%04d |\n", lt->tm_mday, lt->tm_mon+1, lt->tm_year+1900);
+
+        left = right;
+        bufptr = endptr + 1;
+        if ( NULL != (endptr = strchr(bufptr, '\n')) ) {
+                *(endptr) = '\0';
+        }
+        right = strtoul(bufptr, NULL, 10);
+    }
+    lt = localtime( (time_t*) &right); 
+
+    close(file_to_read);
+}
+
+
 void playlist_print(char *home, char *playlist_name, unsigned int n) {
 
     if (n < 7)
@@ -137,7 +224,6 @@ void playlist_print(char *home, char *playlist_name, unsigned int n) {
         printf("Playlist not found!");
     } else {
 
-        /* make sure it's not over ten MB, just to be safe */
         int total_chars = lseek(file_to_read, 0, SEEK_END);
         if (total_chars > 10000000) {
             puts("That playlist file is suspiciously big!!!");
@@ -145,7 +231,6 @@ void playlist_print(char *home, char *playlist_name, unsigned int n) {
             return;
         }
 
-        /* copy entire file into buffer */
         char filebuffer[total_chars + 1];
         lseek(file_to_read, 0, SEEK_SET);
         read(file_to_read, filebuffer, total_chars);
@@ -153,7 +238,6 @@ void playlist_print(char *home, char *playlist_name, unsigned int n) {
 
         draw_tbar(n, playlist_name);
 
-        /* read line by line*/
         char linebuffer[MAX_HABIT_LEN];
         char *ptr_line = linebuffer;
         char *ptr_file = filebuffer;
@@ -256,35 +340,35 @@ time_t date_midnight(time_t time) {
 }
 
 void habit_mark(char *habit_path) {
-    /* check last date */
-    FILE *file_to_read = fopen(habit_path, "r");
-    unsigned long first_line = 0;
-    if (file_to_read == NULL) {
+
+    int file_to_read = open(habit_path, O_RDONLY);
+
+    if (file_to_read == ERR_NOFILE) {
         puts("Habit does not exist!");
         return;
-    } else {
-        char buf[32];
-        if (fgets(buf, sizeof(buf), file_to_read) != NULL) {
-            char *endptr;
-            first_line = strtoul(buf, &endptr, 10);
-            if (endptr == buf || (*endptr != '\n' && *endptr != '\0')) {
-                fclose(file_to_read);
-                puts("File is empty!");
-                return;
-            }
-        }
-        fclose(file_to_read);
+    } 
+
+    char buf[64];
+    read(file_to_read, buf, 64);
+    char *endptr = strchr(buf, '\n');
+
+    if (endptr != NULL) {
+        *endptr = '\0';
     }
 
-    /* add current date to file */
-    time_t current_midnight = date_midnight(time(NULL));
-    if (current_midnight <= (time_t)first_line) {
-        puts("Today already marked!");
-    } else {
-        char buf[32];
-        sprintf(buf, "%ld", (long)current_midnight);
+    time_t first_line = strtoul(buf, &endptr, 10);
+    time_t current_date_midnight = date_midnight(time(NULL));
+
+    if (current_date_midnight > first_line) {
+        sprintf(buf, "%ld", current_date_midnight);
         file_prepend(habit_path, buf);
+    } else {
+        puts("Unmarking today!");
+        printf("%s\n", buf);
+        file_delete_line(habit_path, buf);
     }
+
+    close(file_to_read);
 }
 
 int habit_create(char *habit_path) {
@@ -320,6 +404,77 @@ int habit_delete(char *habit_path) {
     }
     close(fhabit);
     return TRUE;
+}
+
+void
+habit_insert(char *habit_path, char *date, int is_date) 
+{
+    int file_to_read = open(habit_path, O_RDONLY);
+
+    if (file_to_read == ERR_NOFILE) {
+        puts("Habit does not exist!");
+        return;
+    }
+
+    char buffer[BUFSIZ];
+    int n_bytes = lseek(file_to_read, 0, SEEK_END);
+    lseek(file_to_read, 0, SEEK_SET);
+
+    if (n_bytes >= BUFSIZ) {
+        n_bytes = BUFSIZ - 1;
+        buffer[BUFSIZ-1] = '\0';
+    }
+
+    read(file_to_read, buffer, n_bytes);
+
+    time_t time_where;
+
+    if (is_date == FALSE) {
+        time_where = date_midnight(time(NULL)) - strtod(date, NULL)*24*60*60;
+    } else {
+        struct tm d;
+        sscanf(date, "%d/%d/%d", &d.tm_mday, &d.tm_mon, &d.tm_year );
+        d.tm_year -= 1900;
+        d.tm_mon -= 1;
+        time_where = mktime(&d);
+    }
+
+    if (time_where >= date_midnight(time(NULL))) {
+        close(file_to_read);
+        puts("Time traveler huh?");
+        return;
+    }
+
+    char* bufptr = buffer;
+    char* endptr;
+    time_t time_read = -1;
+
+    while ( (endptr = strchr(bufptr, '\n')) != NULL ) {
+        *endptr = '\0';
+        time_read = strtoul(bufptr, NULL, 10);
+        *endptr = '\n';
+        if (time_read <= time_where) 
+            break;
+        bufptr = endptr + 1;
+    }
+
+    char buf[64];
+    sprintf(buf, "%ld\n" , time_where); 
+
+    if (time_read == time_where) {
+        file_delete_line(habit_path, buf);
+        return;
+    }
+
+    char *temppath = alloccat(habit_path, "___temp___");
+    int file_to_write = open(temppath, O_WRONLY | O_TRUNC | O_CREAT, 0644);
+    write(file_to_write, buffer, bufptr - buffer);
+    write(file_to_write, buf, strlen(buf));
+    write(file_to_write, bufptr, strlen(bufptr));
+    remove(habit_path);
+    rename(temppath, habit_path);
+    free(temppath);
+    close(file_to_write);
 }
 
 void playlist_create(char *playlist_path) {
@@ -380,9 +535,9 @@ void playlist_remove(char *home_path, char *name, char *playlist) {
 void playlist_delete(char *playlist_path) { remove(playlist_path); }
 
 int main(int argc, char *argv[]) {
+
     char *home_path = alloccat(getenv("HOME"), "/.local/share/habits/");
 
-    /* touch all.playlist */
     char *allpath = alloccat(home_path, ALL);
     file_touch(allpath);
     free(allpath);
@@ -390,7 +545,6 @@ int main(int argc, char *argv[]) {
     if (ASCII_MODE == TRUE)
         enable_ascci();
 
-    /* if only one argument, print n days */
     uint days = DEFAULT_DAYS;
     if (argc <= 2) {
         if (argv[1] != NULL)
@@ -399,6 +553,7 @@ int main(int argc, char *argv[]) {
         free(home_path);
         return 0;
     }
+
 
     char *habit_path = alloccat(home_path, argv[2]);
     if (argv[1][1] == 'h') {
@@ -417,6 +572,25 @@ int main(int argc, char *argv[]) {
                     puts("Habit does not exist!");
                 }
                 break;
+            case 'i':
+                /* here, days is days going back */
+                if (argv[3] != NULL) {
+                    habit_insert(habit_path, argv[3], FALSE);
+                    playlist_print(home_path, ALL, DEFAULT_DAYS);
+                }
+                else {
+                    puts("Provide a number of days ago to insert at.");
+                }
+                break;
+            case 'I':
+                if (argv[3] != NULL) {
+                    habit_insert(habit_path, argv[3], TRUE);
+                    playlist_print(home_path, ALL, DEFAULT_DAYS);
+                }
+                else {
+                    puts("Provide a date to insert at.");
+                }
+                break;
             case 'd':
                 switch (habit_delete(habit_path)) {
                     case -1:
@@ -424,7 +598,6 @@ int main(int argc, char *argv[]) {
                         break;
                     case TRUE:
                         playlist_remove(home_path, argv[2], ALL);
-                        /*playlist_print(home_path, ALL, days);*/
                         break;
                     default:
                         puts("Bruh");
@@ -442,6 +615,12 @@ int main(int argc, char *argv[]) {
                 draw_tbar(days, "STATUS");
                 habit_print(home_path, argv[2], days);
                 draw_bbar(days);
+                break;
+
+            case 'S':
+                if (argv[3] != NULL)
+                    days = strtod(argv[3], NULL);
+                habit_print_dates(home_path, argv[2], days);
                 break;
 
             default:

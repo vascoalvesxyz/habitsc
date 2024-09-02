@@ -31,6 +31,10 @@ habitsc -ha code        # creates habit code
 
 habitsc -hm code        # marks/unmarks code as done for today
 
+habitsc -hi code _n_    # marks/unmarks code as done for _n_ days ago
+
+habitsc -hI code "dd/mm/YY" # marks/unmarks specific date
+
 habitsc -hs code _n_    # shows last _n_ days just for code
 
 habitsc -hd code        # deletes habid code
@@ -53,4 +57,3 @@ habitsc -pd important       # deletes playlist important
 ## Todo
 - List playlists.
 - Change habit order in playlist.
-- Mark/unmark date at earlier day.

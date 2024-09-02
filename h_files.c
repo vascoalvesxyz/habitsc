@@ -101,43 +101,38 @@ int file_delete_line(char* path, char* what) {
 
     if (file_to_read == -1) {
         puts("File could not be opened!");
-        return -1;
+        return ERR_NOFILE;
     } 
 
     uint total_chars = lseek(file_to_read, 0, SEEK_END);
     lseek(file_to_read, 0, SEEK_SET);
-    char *tempfilepath = alloccat(path, "___temp___");
-    int file_to_write = open(tempfilepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
-    int is_found = 0;
-    char filebuffer[BUFSIZ+1];
+    char filebuffer[total_chars+1];
+    read(file_to_read, (unsigned char*) filebuffer, total_chars);
+    *(filebuffer+total_chars) = '\0'; /* necessary */
 
-    for (uint i = 1; i <= total_chars/BUFSIZ + 1; i++) {
-        int bytes_read = read(file_to_read, (unsigned char*) filebuffer, BUFSIZ);
-        filebuffer[BUFSIZ] = '\0'; /* This line is necessary since we are not reading the entire file */
-        if ( is_found == 0) {
-            char* found = strstr(filebuffer, what);
-            if (found != NULL && found != filebuffer) { 
-                char* next_line = found + strlen(what) + 1;
-                write(file_to_write, filebuffer, found-filebuffer); 
-                write(file_to_write, next_line, strlen(next_line));
-                is_found = 1;
-            }
+    char* found;
+    if (NULL != (found = strstr(filebuffer, what)) ) 
+    {
+        char *tempfilepath = alloccat(path, "___temp___");
+        int file_to_write = open(tempfilepath, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
-            else { write(file_to_write, filebuffer, bytes_read); }
-        } else { write(file_to_write, filebuffer, bytes_read); } 
-    } 
+        write(file_to_write, filebuffer, found-filebuffer); 
+        char* next_line = strchr(found, '\n');
 
-    close(file_to_write);
-    if (is_found == 1) {
-        unlink(path);
+        if (next_line != NULL)
+            write(file_to_write, next_line+1, strlen(next_line+1));
+        else 
+            write(file_to_write, "\0", 1);
+
+        close(file_to_write);
+        remove(path);
         rename(tempfilepath, path);
-    } else {
-        unlink(tempfilepath);
+        free(tempfilepath);
     }
-    free(tempfilepath);
+
     close(file_to_read);
-    return is_found;
+    return TRUE;
 }
 
 /* insert line */
