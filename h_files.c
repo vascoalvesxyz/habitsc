@@ -1,6 +1,4 @@
 #include "habits.h"
-#include <string.h>
-#include <unistd.h>
 
 int file_check(char* path) {
     int file_to_touch = open(path, O_RDONLY);

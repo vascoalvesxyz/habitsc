@@ -1,6 +1,5 @@
 #include "habits.h"
 #include "config.h"
-#include <stdio.h>
 
 /*static const unsigned int LINEBUFFER = 32;*/
 static const unsigned int NAME_PADDING = 16;
@@ -17,7 +16,6 @@ void enable_ascci();
 int  habit_create(char *habit_path);
 int  habit_delete(char *habit_path);
 void habit_insert(char *habit_path, char* date, int is_date);
-void habit_mark(char *habit_path);
 void habit_print(char *home, char *habit_name, unsigned int total_days);
 void habit_print_dates(char *home, char *habit_name, unsigned int total_days);
 void habit_rename(char *path, char *old_name, char *new_name);
@@ -72,66 +70,71 @@ habit_print(char *home, char *habit_name, unsigned int total_days)
     lseek(file_to_read,  0, SEEK_SET);
     read(file_to_read, buffer, n_bytes);
 
-    if (n_bytes < BUFSIZ)  {
-        *(buffer+n_bytes-1) = '\n';
-        *(buffer+n_bytes) = '\0';
-    }
-
     if (SEPERATE_HABITS == 1)
         draw_hseperators(total_days);
 
     printf("%s%*s %s ", VBAR_THICK, 16, habit_name, VBAR_THIN);
 
-    unsigned long left = date_midnight(time(NULL)) + 24*60*60;
-
-    char *bufptr = &buffer[0];
-    char *endptr = strchr(bufptr, '\n');
-    *(endptr) = '\0';
-
-    unsigned long right = strtoul(bufptr, NULL, 10);
     uint i = 0, c = 0;
-    int in_between = 0; /* needs to be an int to avoid overflow */
 
-    while (*bufptr != '\0')
-    {
-        in_between = (difftime(left, right) / (24 * 60 * 60)) - 1;
+    /* if the file is not empty, it will iterate from left to right */
+    if (n_bytes != 0) {
+        if (n_bytes < BUFSIZ)  {
+            *(buffer+n_bytes-1) = '\n';
+            *(buffer+n_bytes) = '\0';
+        }
 
-        if (in_between > 0) {
+        unsigned long left = date_midnight(time(NULL)) + 24*60*60;
 
-            for (i = 0; i < in_between; i++)
-            {
+        char *bufptr = &buffer[0];
+        char *endptr = strchr(bufptr, '\n');
+        *(endptr) = '\0';
+
+        unsigned long right = strtoul(bufptr, NULL, 10);
+        int in_between = 0; /* needs to be an int to avoid overflow */
+
+        while (*bufptr != '\0')
+        {
+            in_between = (difftime(left, right) / (24 * 60 * 60)) - 1;
+
+            if (in_between > 0) {
+
+                for (i = 0; i < in_between; i++)
+                {
+                    if (c >= total_days)
+                        break; 
+                    blue();
+                    printf("o ");
+                    reset();
+                    c++;
+                    if (c % MAX_DAYS_PER_LINE == 0 && c != total_days) {
+                        printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
+                    }
+                }
                 if (c >= total_days)
                     break; 
-                blue();
-                printf("o ");
-                reset();
-                c++;
-                if (c % MAX_DAYS_PER_LINE == 0 && c != total_days) {
-                    printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
-                }
             }
+
+            red();
+            printf("x ");
+            c++;
+            reset();
+
+            if (c % MAX_DAYS_PER_LINE == 0 && c != total_days)
+                printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
             if (c >= total_days)
-                break; 
-        }
+                break;
 
-        red();
-        printf("x ");
-        c++;
-        reset();
-
-        if (c % MAX_DAYS_PER_LINE == 0 && c != total_days)
-            printf("%s\n%s\t\t  %s ", VBAR_THICK, VBAR_THICK, VBAR_THIN);
-        if (c >= total_days)
-            break;
-
-        left = right;
-        bufptr = endptr + 1;
-        if ( NULL != (endptr = strchr(bufptr, '\n')) ) {
+            left = right;
+            bufptr = endptr + 1;
+            if ( NULL != (endptr = strchr(bufptr, '\n')) ) {
                 *(endptr) = '\0';
+            }
+            right = strtoul(bufptr, NULL, 10);
         }
-        right = strtoul(bufptr, NULL, 10);
     }
 
+    /* print remaining days */
     if (c < total_days) {
         while (c < total_days) {
             blue();
@@ -339,38 +342,6 @@ time_t date_midnight(time_t time) {
     return mktime(lnow);
 }
 
-void habit_mark(char *habit_path) {
-
-    int file_to_read = open(habit_path, O_RDONLY);
-
-    if (file_to_read == ERR_NOFILE) {
-        puts("Habit does not exist!");
-        return;
-    } 
-
-    char buf[64];
-    read(file_to_read, buf, 64);
-    char *endptr = strchr(buf, '\n');
-
-    if (endptr != NULL) {
-        *endptr = '\0';
-    }
-
-    time_t first_line = strtoul(buf, &endptr, 10);
-    time_t current_date_midnight = date_midnight(time(NULL));
-
-    if (current_date_midnight > first_line) {
-        sprintf(buf, "%ld", current_date_midnight);
-        file_prepend(habit_path, buf);
-    } else {
-        puts("Unmarking today!");
-        printf("%s\n", buf);
-        file_delete_line(habit_path, buf);
-    }
-
-    close(file_to_read);
-}
-
 int habit_create(char *habit_path) {
     int res = file_touch(habit_path);
     switch (res) {
@@ -439,7 +410,7 @@ habit_insert(char *habit_path, char *date, int is_date)
         time_where = mktime(&d);
     }
 
-    if (time_where >= date_midnight(time(NULL))) {
+    if (time_where > date_midnight(time(NULL))) {
         close(file_to_read);
         puts("Time traveler huh?");
         return;
@@ -605,7 +576,7 @@ int main(int argc, char *argv[]) {
                 }
                 break;
             case 'm':
-                habit_mark(habit_path);
+                habit_insert(habit_path, "0", FALSE);
                 playlist_print(home_path, ALL, days);
                 break;
 
