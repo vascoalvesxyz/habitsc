@@ -4,6 +4,11 @@
 /*static const unsigned int LINEBUFFER = 32;*/
 static const unsigned int NAME_PADDING = 16;
 
+
+/* implementations */
+void red() { printf("\033[1;31m"); }
+void blue() { printf("\033[0;34m"); }
+void reset() { printf("\033[0m"); }
 /* functions */
 void blue();
 void red();
@@ -24,11 +29,6 @@ void playlist_create(char *playlist_path);
 void playlist_delete(char *playlist_path);
 void playlist_print(char *home, char *playlist_name, unsigned int n);
 void playlist_remove(char *home_path, char *name, char *playlist);
-
-/* implementations */
-void red() { printf("\033[1;31m"); }
-void blue() { printf("\033[0;34m"); }
-void reset() { printf("\033[0m"); }
 
 void enable_ascci() {
     LEFT_ELBOW = "|";
